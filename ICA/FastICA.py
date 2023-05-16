@@ -31,6 +31,7 @@ def FastICA(X, vectors, eps):
 
     while np.abs(np.dot(w1.T, w2)) < (1 - eps):
         w1 = w2
+
         # first is E{xg(W.T*x)} term
         first = np.dot(X, g3(np.dot(w2.T, X))) / n
         # second is E{g_dash(W.T*x)}*W term

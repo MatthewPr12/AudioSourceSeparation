@@ -1,12 +1,8 @@
 from sklearn.decomposition import FastICA
 from scipy import signal
-from scipy.io import wavfile as wf
 from matplotlib import pyplot as plt
-from pydub import AudioSegment
 import seaborn as sns
 import numpy as np
-import IPython
-import wave
 
 np.random.seed(0)
 
@@ -25,7 +21,7 @@ def ica_basics():
     S /= S.std(axis=0)
     A = np.array([[1, 1, 1], [0.5, 2, 1.0], [1.5, 1.0, 2.0]])
     X = np.dot(S, A.T)
-    ica = FastICA(n_components=3)
+    ica = FastICA(n_components=2)
     S_ = ica.fit_transform(X)
     fig = plt.figure()
     models = [X, S, S_]
@@ -39,3 +35,7 @@ def ica_basics():
 
     fig.tight_layout()
     plt.show()
+
+
+if __name__ == "__main__":
+    ica_basics()
