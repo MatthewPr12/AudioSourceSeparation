@@ -23,7 +23,6 @@ def whitenMatrix(matrix):
     # To verify, compute the covvariance matrix, it will be approximately identity
     whiteMatrix = np.dot(whitenTrans, matrix)
 
-    # print np.dot(whiteMatrix, whiteMatrix.T)/matrix.shape[1]
 
     return whiteMatrix
 

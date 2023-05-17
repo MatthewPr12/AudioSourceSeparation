@@ -5,56 +5,75 @@ import utilities as utl
 import numpy as np
 
 
-# specifing epsilon(upper bound to the error)
-eps = 0.00000001
+def read_data(path1, path2):
+    rate1, data1 = wavfile.read(path1)
+    rate2, data2 = wavfile.read(path2)
+    return rate1, data1, rate2, data2
 
-# Read the mixed signals
-rate1, data1 = wavfile.read('../AudioData/sounds_mixedX.wav')
-rate2, data2 = wavfile.read('../AudioData/sounds_mixedY.wav')
 
-# Centering the mixed signals and scaling the values as well
-data1 = data1 - np.mean(data1)
-data1 = data1 / 32768
-data2 = data2 - np.mean(data2)
-data2 = data2 / 32768
+def preprocess_data(data1, data2):
+    # centering + scaling + whitening
+    data1 = data1 - np.mean(data1)
+    data1 = data1 / 32768
+    data2 = data2 - np.mean(data2)
+    data2 = data2 / 32768
 
-# Creating a matrix out of the signals
-matrix = np.vstack([data1, data2])
+    matrix = np.vstack([data1, data2])
+    whiteMatrix = utl.whitenMatrix(matrix)
 
-# Whitening the matrix as a pre-processing step
-whiteMatrix = utl.whitenMatrix(matrix)
+    return whiteMatrix
 
-X = whiteMatrix
 
-# Find the individual components one by one
-vectors = []
-for i in range(0, X.shape[0]):
-    # The FastICA function is used as is from FastICA.py, and it works out of the box
-    vector = FastICA(X, vectors, eps)
-    vectors.append(vector)
+def apply_FastICA(X, whiteMatrix):
+    vectors = []
+    for i in range(0, X.shape[0]):
+        vector = FastICA(X, vectors, 0.00000001)
+        vectors.append(vector)
 
-# Stack the vectors to form the unmixing matrix
-W = np.vstack(vectors)
+    W = np.vstack(vectors)
+    S = np.dot(W, whiteMatrix)
+    return S
 
-# Get the original matrix
-S = np.dot(W, whiteMatrix)
 
-# # Unmixing matrix through FOBI
-# fobiW = FOBI(X)
-#
-# # Get the original matrix using fobiW
-# fobiS = np.dot(fobiW.T, whiteMatrix)
+def apply_FOBI(X, whiteMatrix):
+    fobiW = FOBI(X)
+    fobiS = np.dot(fobiW.T, whiteMatrix)
+    return fobiS
 
-# Plot the separated sound signals
-utl.plotSounds([S[0], S[1]], ["1", "2"], rate1, "Ring_StarWars_separated")
 
-# Write the separated sound signals, 5000 is multiplied so that signal is audible
-wavfile.write("./results/FOBIseparateX.wav", rate1, 5000 * S[0].astype(np.int16))
-wavfile.write("./results/FOBIseparateY.wav", rate1, 5000 * S[1].astype(np.int16))
+def plot_separated_signals(S, rate1, label, result_path1, result_path2):
+    # Plot the separated sound signals
+    utl.plotSounds([S[0], S[1]], ["1", "2"], rate1, label)
 
-# Plot the separated sound signals
-# utl.plotSounds([fobiS[1], fobiS[0]], ["1", "2"], rate1, "Ring_StarWars_separated_FOBI")
-#
-# # Write the separated sound signals, 5000 is multiplied so that signal is audible
-# wavfile.write("./results/FOBIseparateX1.wav", rate1, 5000 * fobiS[1].astype(np.int16))
-# wavfile.write("./results/FOBIseparateY1.wav", rate1, 5000 * fobiS[0].astype(np.int16))
+    # Write the separated sound signals, 5000 is multiplied so that signal is audible
+    wavfile.write(result_path1, rate1, 5000 * S[0].astype(np.int16))
+    wavfile.write(result_path2, rate1, 5000 * S[1].astype(np.int16))
+
+
+def turn_stereo_to_mono(data, ):
+    left_channel = data[:, 0]
+    right_channel = data[:, 1]
+    mono_data = np.mean([left_channel, right_channel], axis=0)
+    return mono_data
+
+
+def main():
+    path1 = '../AudioData/talk_music1.wav'
+    path2 = '../AudioData/talk_music2.wav'
+    name1 = path1.split("/")[-1].split(".")[0]
+    name2 = path2.split("/")[-1].split(".")[0]
+    rate1, data1, rate2, data2 = read_data(path1, path2)
+
+    whiteMatrix = preprocess_data(data1, data2)
+    X = whiteMatrix
+    S = apply_FastICA(X, whiteMatrix)
+    fobiS = apply_FOBI(X, whiteMatrix)
+    plot_separated_signals(S, rate1, name1 + '_' + name2 + '_' + 'separated', "./results/" + name1 + "_res.wav",
+                           "./results/" + name2 + "_res.wav")
+    plot_separated_signals(fobiS, rate1, name1 + '_' + name2 + '_' + 'FOBI_separated',
+                           "./results/" + name1 + "FOBI_res.wav",
+                           "./results/" + name2 + "FOBI_res.wav")
+
+
+if __name__ == "__main__":
+    main()

@@ -20,8 +20,6 @@ def FOBI(X):
 
     weightedCovMatrix /= n
 
-    # Doing the eigen value decomposition
     eigValue, eigVector = np.linalg.eigh(weightedCovMatrix)
 
-    # print eigVector
     return eigVector
